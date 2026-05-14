@@ -24,64 +24,64 @@
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="fetchEvents" :loading="loading">搜索</el-button>
+            <el-button type="primary" @click="resetAndFetch" :loading="loading">搜索</el-button>
             <el-button @click="resetFilters">重置</el-button>
           </el-form-item>
         </el-form>
       </div>
 
-      <el-row :gutter="20" v-loading="loading">
-        <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="event in events" :key="event.id">
-          <el-card class="event-card" shadow="hover" @click="$router.push(`/events/${event.id}`)">
-            <template #cover>
-              <div class="event-cover-wrapper">
-                <img :src="event.cover_image || 'https://picsum.photos/400/200?random=' + event.id" class="event-cover" alt="活动封面" />
-                <div class="event-status" :class="event.status">
-                  {{ getStatusText(event.status) }}
+      <div v-loading="loading && events.length === 0">
+        <el-row :gutter="20">
+          <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="event in events" :key="event.id">
+            <el-card class="event-card" shadow="hover" @click="$router.push(`/events/${event.id}`)">
+              <template #cover>
+                <div class="event-cover-wrapper">
+                  <img :src="event.cover_image || 'https://picsum.photos/400/200?random=' + event.id" class="event-cover" alt="活动封面" />
+                  <div class="event-status" :class="event.status">
+                    {{ getStatusText(event.status) }}
+                  </div>
+                </div>
+              </template>
+              <div class="event-info">
+                <h3 class="event-title">{{ event.title }}</h3>
+                <div class="event-meta">
+                  <span><el-icon size="14"><Calendar /></el-icon> {{ formatDate(event.start_time) }}</span>
+                  <span><el-icon size="14"><User /></el-icon> {{ event.current_count }}/{{ event.max_participants }}</span>
+                </div>
+                <div class="event-tags">
+                  <el-tag size="small" v-for="tag in event.tags" :key="tag.id">{{ tag.name }}</el-tag>
                 </div>
               </div>
-            </template>
-            <div class="event-info">
-              <h3 class="event-title">{{ event.title }}</h3>
-              <div class="event-meta">
-                <span><el-icon size="14"><Calendar /></el-icon> {{ formatDate(event.start_time) }}</span>
-                <span><el-icon size="14"><User /></el-icon> {{ event.current_count }}/{{ event.max_participants }}</span>
-              </div>
-              <div class="event-tags">
-                <el-tag size="small" v-for="tag in event.tags" :key="tag.id">{{ tag.name }}</el-tag>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
+            </el-card>
+          </el-col>
+        </el-row>
 
-      <div v-if="events.length === 0 && !loading" class="empty-state">
-        <el-icon class="empty-icon"><Search /></el-icon>
-        <p>没有找到符合条件的活动</p>
-      </div>
+        <div v-if="events.length === 0 && !loading" class="empty-state">
+          <el-icon class="empty-icon"><Search /></el-icon>
+          <p>没有找到符合条件的活动</p>
+        </div>
 
-      <div class="pagination" v-if="total > 0">
-        <el-pagination
-          v-model:current-page="filters.page"
-          v-model:page-size="filters.page_size"
-          :total="total"
-          :page-sizes="[8, 16, 24, 32]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="fetchEvents"
-          @size-change="fetchEvents"
-        />
+        <div v-if="loading && events.length > 0" class="loading-more">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <span>加载中...</span>
+        </div>
+
+        <div v-if="!hasMore && events.length > 0" class="no-more">
+          没有更多了
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import api from '@/utils/request'
 
 const loading = ref(false)
 const events = ref([])
 const total = ref(0)
+const hasMore = ref(true)
 
 const filters = ref({
   page: 1,
@@ -91,15 +91,29 @@ const filters = ref({
   tag: ''
 })
 
-const fetchEvents = async () => {
+const fetchEvents = async (isLoadMore = false) => {
+  if (loading.value) return
+  
   loading.value = true
   try {
     const res = await api.get('/events', { params: filters.value })
-    events.value = res.data.list
+    if (isLoadMore) {
+      events.value = [...events.value, ...res.data.list]
+    } else {
+      events.value = res.data.list
+    }
     total.value = res.data.total
+    hasMore.value = events.value.length < total.value
   } finally {
     loading.value = false
   }
+}
+
+const resetAndFetch = () => {
+  filters.value.page = 1
+  hasMore.value = true
+  events.value = []
+  fetchEvents(false)
 }
 
 const resetFilters = () => {
@@ -110,7 +124,20 @@ const resetFilters = () => {
     keyword: '',
     tag: ''
   }
-  fetchEvents()
+  resetAndFetch()
+}
+
+const handleScroll = () => {
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight
+  const clientHeight = document.documentElement.clientHeight || window.innerHeight
+
+  if (scrollTop + clientHeight >= scrollHeight - 100) {
+    if (!loading.value && hasMore.value) {
+      filters.value.page++
+      fetchEvents(true)
+    }
+  }
 }
 
 const formatDate = (dateStr) => {
@@ -130,7 +157,12 @@ const getStatusText = (status) => {
 }
 
 onMounted(() => {
-  fetchEvents()
+  fetchEvents(false)
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
@@ -208,8 +240,19 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.pagination {
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #909399;
+  gap: 8px;
+}
+
+.no-more {
   text-align: center;
-  padding: 20px 0;
+  padding: 30px;
+  color: #c0c4cc;
+  font-size: 14px;
 }
 </style>

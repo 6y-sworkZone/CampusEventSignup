@@ -6,7 +6,6 @@ import (
 	"campus-events/utils"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
@@ -84,9 +83,11 @@ func ExportRegistrations(c *gin.Context) {
 
 	for i, reg := range regs {
 		row := i + 2
-		studentID := reg.User.StudentID
-		if studentID == "" {
-			studentID = reg.User.EmployeeID
+		studentID := ""
+		if reg.User.StudentID != nil {
+			studentID = *reg.User.StudentID
+		} else if reg.User.EmployeeID != nil {
+			studentID = *reg.User.EmployeeID
 		}
 		
 		signed := "否"

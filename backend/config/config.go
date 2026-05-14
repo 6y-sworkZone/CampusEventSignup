@@ -19,6 +19,7 @@ func InitDB() {
 		&models.Event{},
 		&models.EventTag{},
 		&models.Registration{},
+		&models.Comment{},
 	)
 	
 	DB = db

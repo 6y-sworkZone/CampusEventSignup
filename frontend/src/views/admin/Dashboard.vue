@@ -185,8 +185,23 @@ const renderCharts = () => {
   }
 }
 
-const exportData = () => {
-  window.open('/api/stats/export', '_blank')
+const exportData = async () => {
+  try {
+    const response = await api.get('/stats/export', {
+      responseType: 'blob'
+    })
+    
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `报名名单_${new Date().getTime()}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('导出失败', e)
+  }
 }
 
 const handleResize = () => {

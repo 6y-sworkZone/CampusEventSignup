@@ -19,11 +19,12 @@ func Logger() gin.HandlerFunc {
 		statusCode := c.Writer.Status()
 		clientIP := c.ClientIP()
 		
-		fmt.Printf("[%s] %s %s - Status: %d - Latency: %v\n",
+		fmt.Printf("[%s] %s %s - Status: %d - IP: %s - Latency: %v\n",
 			time.Now().Format("2006-01-02 15:04:05"),
 			method,
 			path,
 			statusCode,
+			clientIP,
 			latency,
 		)
 	}

@@ -65,14 +65,19 @@ func Register(c *gin.Context) {
 	}
 
 	user := models.User{
-		Username:   req.Username,
-		StudentID:  req.StudentID,
-		EmployeeID: req.EmployeeID,
-		Phone:      req.Phone,
-		College:    req.College,
-		Password:   string(hashedPassword),
-		Role:       req.Role,
-		Avatar:     "",
+		Username: req.Username,
+		Phone:    req.Phone,
+		College:  req.College,
+		Password: string(hashedPassword),
+		Role:     req.Role,
+		Avatar:   "",
+	}
+
+	if req.StudentID != "" {
+		user.StudentID = &req.StudentID
+	}
+	if req.EmployeeID != "" {
+		user.EmployeeID = &req.EmployeeID
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {
@@ -96,6 +101,11 @@ func Login(c *gin.Context) {
 
 	if user.ID == 0 {
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(401, "用户不存在"))
+		return
+	}
+
+	if user.Status == models.StatusDisabled {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse(401, "账户已被禁用，请联系管理员"))
 		return
 	}
 

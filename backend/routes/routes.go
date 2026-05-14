@@ -22,6 +22,8 @@ func SetupRoutes(r *gin.Engine) {
 			events.GET("", controllers.GetEventList)
 			events.GET("/:id", controllers.GetEvent)
 			events.GET("/:id/stats", controllers.GetEventStats)
+			events.GET("/:id/comments", controllers.GetEventComments)
+			events.GET("/tags/hot", controllers.GetHotTags)
 			
 			events.Use(middleware.Auth())
 			{
@@ -34,7 +36,22 @@ func SetupRoutes(r *gin.Engine) {
 				events.POST("/:id/register", controllers.RegisterForEvent)
 				events.POST("/:id/cancel", controllers.CancelRegistration)
 				events.POST("/:id/signin", controllers.SignIn)
+				
+				events.POST("/:id/comments", controllers.CreateComment)
 			}
+		}
+
+		comments := api.Group("/comments")
+		comments.Use(middleware.Auth())
+		{
+			comments.DELETE("/:id", controllers.DeleteComment)
+		}
+
+		admin := api.Group("/admin")
+		admin.Use(middleware.Auth(), middleware.AdminAuth())
+		{
+			admin.GET("/users", controllers.GetUsers)
+			admin.PUT("/users/:id/status", controllers.ToggleUserStatus)
 		}
 
 		registrations := api.Group("/registrations")

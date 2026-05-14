@@ -19,6 +19,7 @@
             <el-sub-menu v-if="userStore.isAdmin" index="admin">
               <template #title>管理后台</template>
               <el-menu-item index="/admin/dashboard">数据统计</el-menu-item>
+              <el-menu-item index="/admin/users">用户管理</el-menu-item>
               <el-menu-item index="/admin/events">活动管理</el-menu-item>
             </el-sub-menu>
           </el-menu>

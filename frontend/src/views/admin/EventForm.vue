@@ -28,7 +28,7 @@
           </el-form-item>
 
           <el-form-item label="活动描述" prop="description">
-            <el-input v-model="form.description" type="textarea" :rows="8" placeholder="请输入活动描述" />
+            <RichEditor v-model="form.description" />
           </el-form-item>
 
           <el-row :gutter="20">
@@ -104,6 +104,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import api from '@/utils/request'
 import { ElMessage } from 'element-plus'
+import RichEditor from '@/components/RichEditor.vue'
 
 const route = useRoute()
 const router = useRouter()

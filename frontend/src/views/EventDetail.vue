@@ -48,6 +48,28 @@
             <el-tag v-for="tag in event.tags" :key="tag.id" size="large">{{ tag.name }}</el-tag>
           </div>
 
+          <div class="stats-section mb-20">
+            <h3>报名统计</h3>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-number">{{ eventStats.registered_count || 0 }}</div>
+                <div class="stat-label">已报名</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">{{ eventStats.signed_count || 0 }}</div>
+                <div class="stat-label">已签到</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">{{ eventStats.waitlist_count || 0 }}</div>
+                <div class="stat-label">候补人数</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">{{ eventStats.max_participants || 0 }}</div>
+                <div class="stat-label">最大人数</div>
+              </div>
+            </div>
+          </div>
+
           <div class="description-section mb-20">
             <h3>活动详情</h3>
             <div v-html="event.description || '暂无详细描述'"></div>
@@ -68,6 +90,8 @@
               </el-button>
             </template>
           </div>
+          
+          <Comments :event-id="event.id" />
         </div>
       </el-card>
     </div>
@@ -92,6 +116,7 @@ import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import api from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import Comments from '@/components/Comments.vue'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -100,6 +125,7 @@ const loading = ref(false)
 const registerLoading = ref(false)
 const signinLoading = ref(false)
 const event = ref(null)
+const eventStats = ref({})
 const signinDialogVisible = ref(false)
 const signinForm = ref({ code: '' })
 
@@ -115,6 +141,9 @@ const fetchEvent = async () => {
   try {
     const res = await api.get(`/events/${route.params.id}`)
     event.value = res.data
+    
+    const statsRes = await api.get(`/events/${route.params.id}/stats`)
+    eventStats.value = statsRes.data
   } finally {
     loading.value = false
   }
@@ -130,7 +159,7 @@ const handleRegister = async () => {
     registerLoading.value = true
     const res = await api.post(`/events/${event.value.id}/register`)
     ElMessage.success(res.data.message || '报名成功')
-    fetchEvent()
+    await fetchEvent()
   } finally {
     registerLoading.value = false
   }
@@ -247,6 +276,37 @@ onMounted(() => {
   font-size: 18px;
   margin-bottom: 12px;
   color: #303133;
+}
+
+.stats-section h3 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #303133;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 20px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: 600;
+  color: #409eff;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #909399;
 }
 
 .action-section {
